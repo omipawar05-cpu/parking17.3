@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Book a Slot{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:750px;">
+  <div class="page-header">
+    <h1>📋 Book a Slot</h1>
+    <p>Select your preferred slot and duration below.</p>
+  </div>
+
+  {% if slots %}
+  <form method="POST" action="{{ url_for('book') }}" id="bookForm">
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Select Slot</div>
+
+      <!-- Visual slot picker -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(90px, 1fr)); gap:0.75rem; margin-bottom:1.5rem;" id="slotPickerGrid">
+        {% for slot in slots %}
+        <label class="slot-pick-item" style="cursor:pointer;">
+          <input type="radio" name="slot_id" value="{{ slot.id }}" style="display:none;"
+                 onchange="onSlotSelect({{ slot.price_per_hour }}, '{{ slot.slot_number }}', '{{ slot.slot_type }}')">
+          <div class="parking-slot available slot-pick-box" data-id="{{ slot.id }}">
+            <div class="slot-icon">🟢</div>
+            <div class="slot-num">{{ slot.slot_number }}</div>
+            <div class="slot-price">₹{{ slot.price_per_hour }}/hr</div>
+            <div class="slot-type-badge" style="color:{% if slot.slot_type == 'premium' %}var(--accent){% else %}var(--text-muted){% endif %}">
+              {{ slot.slot_type }}
+            </div>
+          </div>
+        </label>
+        {% endfor %}
+      </div>
+
+      <div id="selectedSlotInfo" style="display:none; background:rgba(245,166,35,0.06); border:1px solid rgba(245,166,35,0.25); border-radius:10px; padding:0.9rem 1.1rem; margin-bottom:1rem; font-size:0.9rem;">
+        ✅ Selected: <strong id="selectedSlotLabel" style="color:var(--accent);"></strong>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Duration & Cost</div>
+
+      <div class="form-group">
+        <label for="hours">Parking Duration (hours)</label>
+        <input type="number" id="hours" name="hours" class="form-control"
+               min="0.5" max="24" step="0.5" value="2"
+               oninput="calcCost()" placeholder="e.g. 2">
+      </div>
+
+      <!-- Quick duration buttons -->
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.2rem;">
+        <button type="button" class="btn btn-outline btn-sm" onclick="setHours(1)">1 hr</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setHours(2)">2 hrs</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setHours(4)">4 hrs</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setHours(8)">8 hrs</button>
+        <button type="button" class="btn btn-outline btn-sm" onclick="setHours(24)">Full Day</button>
+      </div>
+
+      <!-- Cost Breakdown -->
+      <div class="cost-display">
+        <div class="cost-row">
+          <span>Rate</span>
+          <span id="costRate" class="mono">— /hr</span>
+        </div>
+        <div class="cost-row">
+          <span>Duration</span>
+          <span id="costHours" class="mono">2.0 hrs</span>
+        </div>
+        <div class="cost-row total">
+          <span>Total Cost</span>
+          <span id="costTotal">—</span>
+        </div>
+      </div>
+
+      <!-- Estimated times -->
+      <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.85rem; color:var(--text-muted); margin-top:0.8rem;">
+        <div>🕐 Start: <span id="estStart" style="color:var(--text);">Now</span></div>
+        <div>🕕 End: <span id="estEnd" style="color:var(--text);">—</span></div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitBtn" disabled>
+      Continue to Payment →
+    </button>
+    <p style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:0.7rem;">
+      You'll review the booking before payment is processed.
+    </p>
+  </form>
+
+  {% else %}
+  <div class="card" style="text-align:center; padding:3rem;">
+    <div style="font-size:3rem; margin-bottom:1rem;">😔</div>
+    <h3>No Slots Available</h3>
+    <p style="color:var(--text-muted); margin:0.5rem 0 1.5rem;">All parking slots are currently occupied. Please check back soon.</p>
+    <a href="{{ url_for('slots') }}" class="btn btn-outline">View Slot Status</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let selectedRate = 0;
+  let selectedSlotNum = null;
+
+  function onSlotSelect(rate, slotNum, slotType) {
+    selectedRate = rate;
+    selectedSlotNum = slotNum;
+
+    // Highlight selected
+    document.querySelectorAll('.slot-pick-box').forEach(b => {
+      b.style.borderColor = '';
+      b.style.background = '';
+    });
+    const checked = document.querySelector('input[name="slot_id"]:checked');
+    if (checked) {
+      const box = checked.closest('label').querySelector('.slot-pick-box');
+      box.style.borderColor = 'var(--accent)';
+      box.style.background = 'rgba(245,166,35,0.06)';
+    }
+
+    // Show info
+    document.getElementById('selectedSlotInfo').style.display = 'block';
+    document.getElementById('selectedSlotLabel').textContent =
+      `${slotNum} (${slotType}) — ₹${rate}/hr`;
+
+    document.getElementById('submitBtn').disabled = false;
+    calcCost();
+  }
+
+  function setHours(h) {
+    document.getElementById('hours').value = h;
+    calcCost();
+  }
+
+  function calcCost() {
+    const hours = parseFloat(document.getElementById('hours').value) || 0;
+    document.getElementById('costHours').textContent = hours.toFixed(1) + ' hrs';
+
+    if (selectedRate > 0) {
+      const total = (selectedRate * hours).toFixed(2);
+      document.getElementById('costRate').textContent = '₹' + selectedRate + '/hr';
+      document.getElementById('costTotal').textContent = '₹' + total;
+    }
+
+    // Estimated times
+    const now = new Date();
+    const end = new Date(now.getTime() + hours * 3600000);
+    document.getElementById('estStart').textContent = now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('estEnd').textContent = end.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  }
+
+  // Init
+  calcCost();
+
+  // Prevent booking without slot selection
+  document.getElementById('bookForm').addEventListener('submit', function(e) {
+    const selected = document.querySelector('input[name="slot_id"]:checked');
+    if (!selected) { e.preventDefault(); alert('Please select a parking slot.'); return; }
+    const hours = parseFloat(document.getElementById('hours').value);
+    if (!hours || hours < 0.5 || hours > 24) {
+      e.preventDefault(); alert('Duration must be between 0.5 and 24 hours.'); return;
+    }
+  });
+</script>
+{% endblock %}

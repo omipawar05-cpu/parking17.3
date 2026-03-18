@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Parking Slots{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>🅿 Parking Lot</h1>
+    <p>Live view of all parking slots. Updates automatically every 30 seconds.</p>
+  </div>
+
+  <!-- Legend + Stats -->
+  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem; margin-bottom:1.5rem;">
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot green"></div> Available</div>
+      <div class="legend-item"><div class="legend-dot red"></div> Occupied</div>
+    </div>
+    <div style="display:flex; gap:1rem; align-items:center;">
+      <span style="font-size:0.85rem; color:var(--text-muted);">
+        <span id="availCount" style="color:var(--green);font-weight:700;">{{ slots|selectattr('is_available','eq',True)|list|length }}</span> available /
+        <span style="color:var(--red);font-weight:700;">{{ slots|selectattr('is_available','eq',False)|list|length }}</span> occupied
+      </span>
+      <button onclick="refreshSlots()" class="btn btn-outline btn-sm">⟳ Refresh</button>
+      {% if session.user_id %}
+        <a href="{{ url_for('book') }}" class="btn btn-primary btn-sm">Book Now</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Slot Grid — rendered dynamically -->
+  <div id="slotGrid"></div>
+
+  <!-- Slot detail panel (shown on click) -->
+  <div id="slotPanel" style="display:none; margin-top:1.5rem;" class="card">
+    <div class="card-title" id="panelTitle">Slot Details</div>
+    <div id="panelContent"></div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // ── Initial slot data from server ────────────
+  const initialSlots = {{ slots | tojson }};
+
+  function renderGrid(slots) {
+    // Group by row letter
+    const rows = {};
+    slots.forEach(s => {
+      const row = s.slot_number.charAt(0);
+      if (!rows[row]) rows[row] = [];
+      rows[row].push(s);
+    });
+
+    let html = '';
+    for (const [row, rowSlots] of Object.entries(rows)) {
+      html += `<div style="margin-bottom:1.5rem;">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:0.9rem;letter-spacing:2px;color:var(--text-muted);margin-bottom:0.75rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border);">
+          ROW ${row} — ${rowSlots[0].slot_type.toUpperCase()} ZONE
+        </div>
+        <div class="parking-grid">`;
+      rowSlots.forEach(s => {
+        const cls = s.is_available ? 'available' : 'occupied';
+        const icon = s.is_available ? '🟢' : '🔴';
+        html += `
+          <div class="parking-slot ${cls}" onclick="showSlotDetail(${JSON.stringify(s).replace(/"/g, '&quot;')})">
+            <div class="slot-icon">${icon}</div>
+            <div class="slot-num">${s.slot_number}</div>
+            <div class="slot-price">₹${s.price_per_hour}/hr</div>
+            <div class="slot-type-badge" style="color:${s.slot_type==='premium'?'var(--accent)':'var(--text-muted)'}">
+              ${s.slot_type}
+            </div>
+          </div>`;
+      });
+      html += `</div></div>`;
+    }
+    document.getElementById('slotGrid').innerHTML = html;
+
+    // Update count
+    const avail = slots.filter(s => s.is_available).length;
+    document.getElementById('availCount').textContent = avail;
+  }
+
+  function showSlotDetail(slot) {
+    const panel = document.getElementById('slotPanel');
+    panel.style.display = 'block';
+    document.getElementById('panelTitle').textContent = `Slot ${slot.slot_number} — ${slot.slot_type.charAt(0).toUpperCase()+slot.slot_type.slice(1)}`;
+
+    const status = slot.is_available
+      ? '<span class="badge badge-green">🟢 Available</span>'
+      : '<span class="badge badge-red">🔴 Occupied</span>';
+
+    const bookBtn = slot.is_available
+      ? `<a href="/book" class="btn btn-primary" style="margin-top:1rem;">Book This Slot</a>`
+      : `<p style="color:var(--text-muted);margin-top:1rem;font-size:0.9rem;">This slot is currently occupied. Check back later.</p>`;
+
+    document.getElementById('panelContent').innerHTML = `
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start;">
+        <div>
+          <p style="color:var(--text-muted);font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.3rem;">Status</p>
+          ${status}
+        </div>
+        <div>
+          <p style="color:var(--text-muted);font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.3rem;">Rate</p>
+          <strong style="color:var(--accent);font-family:'Bebas Neue',sans-serif;font-size:1.4rem;">₹${slot.price_per_hour}/hr</strong>
+        </div>
+        <div>
+          <p style="color:var(--text-muted);font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.3rem;">Type</p>
+          <strong>${slot.slot_type.charAt(0).toUpperCase()+slot.slot_type.slice(1)}</strong>
+        </div>
+      </div>
+      ${bookBtn}
+    `;
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function refreshSlots() {
+    fetch('/api/slots')
+      .then(r => r.json())
+      .then(data => renderGrid(data.slots));
+  }
+
+  // Initial render
+  renderGrid(initialSlots);
+
+  // Auto-refresh every 30s
+  setInterval(refreshSlots, 30000);
+</script>
+{% endblock %}

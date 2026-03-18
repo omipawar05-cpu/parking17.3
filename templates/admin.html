@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+{% block title %}Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>⚙️ Admin Panel</h1>
+    <p>Manage bookings, slots, and monitor revenue.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Earnings</div>
+      <div class="stat-value">₹{{ "%.0f"|format(total_earnings) }}</div>
+      <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Bookings</div>
+      <div class="stat-value">{{ all_bookings|length }}</div>
+      <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Registered Users</div>
+      <div class="stat-value">{{ total_users }}</div>
+      <div class="stat-sub">Non-admin</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Slots</div>
+      <div class="stat-value">{{ all_slots|length }}</div>
+      <div class="stat-sub">
+        <span style="color:var(--green)">{{ all_slots|selectattr('is_available','eq',True)|list|length }}</span> available /
+        <span style="color:var(--red)">{{ all_slots|selectattr('is_available','eq',False)|list|length }}</span> occupied
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="showTab('bookings')">📋 All Bookings</button>
+    <button class="admin-tab" onclick="showTab('slots')">🅿 Manage Slots</button>
+    <button class="admin-tab" onclick="showTab('addSlot')">➕ Add Slot</button>
+  </div>
+
+  <!-- Tab: All Bookings -->
+  <div class="tab-panel active" id="tab-bookings">
+    {% if all_bookings %}
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>User</th>
+            <th>Email</th>
+            <th>Slot</th>
+            <th>Duration</th>
+            <th>Cost</th>
+            <th>Status</th>
+            <th>Booked At</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in all_bookings %}
+          <tr>
+            <td class="mono" style="color:var(--text-muted)">{{ b.id }}</td>
+            <td><strong>{{ b.user_name }}</strong></td>
+            <td style="color:var(--text-muted);font-size:0.85rem;">{{ b.email }}</td>
+            <td><strong style="color:var(--accent)">{{ b.slot_number }}</strong></td>
+            <td>{{ b.duration_hours }}h</td>
+            <td><strong>₹{{ b.total_cost }}</strong></td>
+            <td>
+              <span class="badge {% if b.status == 'active' %}badge-green{% else %}badge-muted{% endif %}">
+                {{ b.status }}
+              </span>
+            </td>
+            <td class="mono" style="font-size:0.82rem;color:var(--text-muted);">{{ b.created_at.strftime('%d %b %Y') }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p style="color:var(--text-muted);padding:2rem 0;text-align:center;">No bookings yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Tab: Manage Slots -->
+  <div class="tab-panel" id="tab-slots">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Slot</th>
+            <th>Type</th>
+            <th>Rate</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in all_slots %}
+          <tr>
+            <td><strong style="color:var(--accent)">{{ s.slot_number }}</strong></td>
+            <td><span class="badge {% if s.slot_type == 'premium' %}badge-amber{% else %}badge-muted{% endif %}">{{ s.slot_type }}</span></td>
+            <td>₹{{ s.price_per_hour }}/hr</td>
+            <td>
+              {% if s.is_available %}
+                <span class="badge badge-green">🟢 Available</span>
+              {% else %}
+                <span class="badge badge-red">🔴 Occupied</span>
+              {% endif %}
+            </td>
+            <td>
+              <form method="POST" action="{{ url_for('remove_slot', slot_id=s.id) }}"
+                    onsubmit="return confirm('Remove slot {{ s.slot_number }}? This cannot be undone.')">
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Tab: Add Slot -->
+  <div class="tab-panel" id="tab-addSlot">
+    <div class="card" style="max-width:480px;">
+      <div class="card-title">Add New Parking Slot</div>
+      <form method="POST" action="{{ url_for('add_slot') }}">
+        <div class="form-group">
+          <label>Slot Number</label>
+          <input type="text" name="slot_number" class="form-control"
+                 placeholder="e.g. E1, F3" required maxlength="5">
+        </div>
+        <div class="form-group">
+          <label>Slot Type</label>
+          <select name="slot_type" class="form-control">
+            <option value="regular">Regular — Standard parking spot</option>
+            <option value="premium">Premium — Covered/VIP spot</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Price per Hour (₹)</label>
+          <input type="number" name="price" class="form-control"
+                 min="10" max="500" step="5" value="50" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Add Slot</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.currentTarget.classList.add('active');
+  }
+</script>
+{% endblock %}

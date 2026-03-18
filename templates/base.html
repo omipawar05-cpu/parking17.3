@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}ParkEase{% endblock %} — Smart Parking</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+
+<!-- ── NAVBAR ─────────────────────────────── -->
+<nav class="navbar">
+  <a href="{{ url_for('home') }}" class="navbar-brand">
+    🅿️ Park<span>Ease</span>
+  </a>
+
+  <button class="hamburger" id="hamburgerBtn" aria-label="Toggle menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <ul class="nav-links" id="navLinks">
+    <li><a href="{{ url_for('home') }}" {% if request.endpoint=='home' %}class="active"{% endif %}>Home</a></li>
+    <li><a href="{{ url_for('slots') }}" {% if request.endpoint=='slots' %}class="active"{% endif %}>Parking Lots</a></li>
+
+    {% if session.user_id %}
+      <li><a href="{{ url_for('book') }}" {% if request.endpoint=='book' %}class="active"{% endif %}>Book Slot</a></li>
+      <li><a href="{{ url_for('dashboard') }}" {% if request.endpoint=='dashboard' %}class="active"{% endif %}>Dashboard</a></li>
+      {% if session.is_admin %}
+        <li><a href="{{ url_for('admin') }}" {% if request.endpoint=='admin' %}class="active"{% endif %}>Admin</a></li>
+      {% endif %}
+      <li><a href="{{ url_for('logout') }}" class="btn-nav">Logout</a></li>
+    {% else %}
+      <li><a href="{{ url_for('login') }}" {% if request.endpoint=='login' %}class="active"{% endif %}>Login</a></li>
+      <li><a href="{{ url_for('register') }}" class="btn-nav">Register</a></li>
+    {% endif %}
+  </ul>
+</nav>
+
+<!-- ── FLASH MESSAGES ─────────────────────── -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="flash-container">
+      {% for category, message in messages %}
+        <div class="flash {{ category }}">
+          {% if category == 'success' %}✅{% elif category == 'error' %}❌{% else %}ℹ️{% endif %}
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- ── PAGE CONTENT ───────────────────────── -->
+{% block content %}{% endblock %}
+
+<!-- ── FOOTER ─────────────────────────────── -->
+<footer style="border-top:1px solid var(--border); padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.82rem; margin-top:4rem;">
+  © 2024 ParkEase · Smart Parking Management System &nbsp;|&nbsp;
+  <a href="{{ url_for('api_slots') }}" style="color:var(--text-muted)">API</a>
+</footer>
+
+<script>
+  // Mobile hamburger toggle
+  document.getElementById('hamburgerBtn').addEventListener('click', () => {
+    document.getElementById('navLinks').classList.toggle('open');
+  });
+
+  // Auto-dismiss flash messages after 4s
+  setTimeout(() => {
+    document.querySelectorAll('.flash').forEach(f => {
+      f.style.transition = 'opacity 0.4s';
+      f.style.opacity = '0';
+      setTimeout(() => f.remove(), 400);
+    });
+  }, 4000);
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

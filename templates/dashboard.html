@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="page-header">
+    <h1>👋 Hey, {{ session.user_name }}</h1>
+    <p>Here's an overview of your parking activity.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-label">Active Bookings</div>
+      <div class="stat-value">{{ active_bookings|length }}</div>
+      <div class="stat-sub">Currently parked</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Trips</div>
+      <div class="stat-value">{{ (active_bookings|length) + (history|length) }}</div>
+      <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Spent</div>
+      <div class="stat-value">₹{{ "%.0f"|format(total_spent) }}</div>
+      <div class="stat-sub">All time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Quick Action</div>
+      <div style="margin-top:0.5rem;">
+        <a href="{{ url_for('book') }}" class="btn btn-primary btn-sm">+ Book Slot</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Bookings -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-title">Active Bookings</div>
+    {% if active_bookings %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th>Type</th>
+              <th>Start Time</th>
+              <th>End Time</th>
+              <th>Duration</th>
+              <th>Cost</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in active_bookings %}
+            <tr>
+              <td><strong style="color:var(--accent)">{{ b.slot_number }}</strong></td>
+              <td><span class="badge {% if b.slot_type == 'premium' %}badge-amber{% else %}badge-muted{% endif %}">{{ b.slot_type }}</span></td>
+              <td class="mono">{{ b.start_time.strftime('%d %b, %H:%M') }}</td>
+              <td class="mono">{{ b.end_time.strftime('%d %b, %H:%M') }}</td>
+              <td>{{ b.duration_hours }}h</td>
+              <td><strong>₹{{ b.total_cost }}</strong></td>
+              <td><span class="badge badge-green">🟢 Active</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align:center; padding:2.5rem 1rem; color:var(--text-muted);">
+        <div style="font-size:2.5rem; margin-bottom:0.75rem;">🅿️</div>
+        <p>No active bookings right now.</p>
+        <a href="{{ url_for('book') }}" class="btn btn-primary btn-sm" style="margin-top:0.75rem;">Book a Slot</a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Booking History -->
+  <div class="card">
+    <div class="card-title">Recent History</div>
+    {% if history %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Slot</th>
+              <th>Type</th>
+              <th>Date</th>
+              <th>Duration</th>
+              <th>Cost</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in history %}
+            <tr>
+              <td><strong>{{ b.slot_number }}</strong></td>
+              <td><span class="badge {% if b.slot_type == 'premium' %}badge-amber{% else %}badge-muted{% endif %}">{{ b.slot_type }}</span></td>
+              <td class="mono">{{ b.start_time.strftime('%d %b %Y') }}</td>
+              <td>{{ b.duration_hours }}h</td>
+              <td>₹{{ b.total_cost }}</td>
+              <td><span class="badge badge-muted">Completed</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color:var(--text-muted); padding:1rem 0;">No booking history yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- ── HERO ──────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <span class="hero-eyebrow">Smart Urban Parking</span>
+    <h1>Park Smart,<br><em>Drive Easy</em></h1>
+    <p>Real-time slot booking, automated payments, and instant confirmation — parking made effortless.</p>
+    <div class="hero-cta">
+      <a href="{{ url_for('book') }}" class="btn btn-primary btn-lg">🅿 Book a Slot</a>
+      <a href="{{ url_for('slots') }}" class="btn btn-outline btn-lg">View Parking</a>
+    </div>
+
+    <!-- Live stats pulled from backend -->
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="value" id="availableCount">{{ available }}</div>
+        <div class="label">Slots Available</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value">{{ total }}</div>
+        <div class="label">Total Slots</div>
+      </div>
+      <div class="hero-stat">
+        <div class="value">24/7</div>
+        <div class="label">Service Hours</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ───────────────────────────────── -->
+<section class="features">
+  <h2 class="section-title">Everything You Need</h2>
+  <p class="section-sub">A complete parking ecosystem built for the modern city.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">🗺️</div>
+      <h3>Real-Time Availability</h3>
+      <p>Live slot status updated every minute. No more driving around looking for a spot.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📱</div>
+      <h3>Online Booking</h3>
+      <p>Reserve your spot in advance from anywhere. Your slot is held until you arrive.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">💳</div>
+      <h3>Easy Payments</h3>
+      <p>Multiple payment options. Transparent pricing with no hidden charges.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <h3>Full History</h3>
+      <p>Track all your past bookings, expenses, and receipts from your dashboard.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Instant Confirmation</h3>
+      <p>Get your slot confirmed instantly. No waiting, no manual verification needed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <h3>Secure & Reliable</h3>
+      <p>Encrypted sessions and double-booking prevention built into the system.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ───────────────────────────── -->
+<section style="max-width:1100px; margin:0 auto; padding:2rem 1.5rem 5rem;">
+  <h2 class="section-title">How It Works</h2>
+  <p class="section-sub">Three simple steps to park stress-free.</p>
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:2rem; margin-top:2rem; text-align:center;">
+    <div>
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(245,166,35,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);">1</div>
+      <h3 style="margin-bottom:0.4rem;">Choose a Slot</h3>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Browse the live grid and pick an available spot that suits you.</p>
+    </div>
+    <div>
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(245,166,35,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);">2</div>
+      <h3 style="margin-bottom:0.4rem;">Set Duration</h3>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Pick how long you need the spot. Cost is calculated instantly.</p>
+    </div>
+    <div>
+      <div style="width:60px;height:60px;border-radius:50%;background:rgba(245,166,35,0.12);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent);">3</div>
+      <h3 style="margin-bottom:0.4rem;">Pay & Park</h3>
+      <p style="color:var(--text-muted);font-size:0.9rem;">Complete payment and head to your reserved slot. Done!</p>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live slot count via API
+  setInterval(() => {
+    fetch('/api/slots')
+      .then(r => r.json())
+      .then(data => {
+        const avail = data.slots.filter(s => s.is_available).length;
+        document.getElementById('availableCount').textContent = avail;
+      });
+  }, 30000); // refresh every 30s
+</script>
+{% endblock %}

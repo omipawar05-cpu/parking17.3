@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container-sm">
+  <div class="card auth-card">
+    <div class="card-title">Welcome Back</div>
+    <p class="auth-sub">Sign in to manage your parking bookings.</p>
+
+    <form method="POST" action="{{ url_for('login') }}" id="loginForm" novalidate>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control"
+               placeholder="your@email.com" required
+               value="{{ request.form.get('email', '') }}" autofocus>
+        <small class="field-error" id="emailErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-toggle">
+          <input type="password" id="password" name="password" class="form-control"
+                 placeholder="Your password" required>
+          <button type="button" class="toggle-btn" onclick="togglePwd()">👁</button>
+        </div>
+        <small class="field-error" id="pwdErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top:0.5rem;">
+        Sign In
+      </button>
+    </form>
+
+    <hr class="divider">
+
+    <!-- Demo credentials hint -->
+    <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:0.9rem 1rem;font-size:0.82rem;margin-bottom:1rem;">
+      <strong style="color:var(--accent);">Demo Credentials</strong><br>
+      <span style="color:var(--text-muted);">Admin → admin@parking.com / admin123</span>
+    </div>
+
+    <p class="auth-footer">Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd() {
+  const el = document.getElementById('password');
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+  let valid = true;
+
+  const email = document.getElementById('email').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    document.getElementById('emailErr').textContent = 'Please enter a valid email.';
+    valid = false;
+  } else { document.getElementById('emailErr').textContent = ''; }
+
+  const pwd = document.getElementById('password').value;
+  if (!pwd) {
+    document.getElementById('pwdErr').textContent = 'Password is required.';
+    valid = false;
+  } else { document.getElementById('pwdErr').textContent = ''; }
+
+  if (!valid) e.preventDefault();
+});
+</script>
+{% endblock %}

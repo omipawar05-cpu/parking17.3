@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Payment{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width:540px;">
+  <div class="page-header">
+    <h1>💳 Payment</h1>
+    <p>Review your booking and complete payment.</p>
+  </div>
+
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-title">Booking Summary</div>
+
+    <div class="payment-summary">
+      <div class="payment-summary-row">
+        <span>Parking Slot</span>
+        <strong style="color:var(--accent);">{{ booking.slot_number }}</strong>
+      </div>
+      <div class="payment-summary-row">
+        <span>Slot Type</span>
+        <span class="badge {% if booking.slot_type == 'premium' %}badge-amber{% else %}badge-muted{% endif %}">
+          {{ booking.slot_type }}
+        </span>
+      </div>
+      <div class="payment-summary-row">
+        <span>Rate</span>
+        <span>₹{{ booking.price_per_hour }}/hr</span>
+      </div>
+      <div class="payment-summary-row">
+        <span>Duration</span>
+        <span>{{ booking.hours }} hours</span>
+      </div>
+      <div class="payment-summary-row">
+        <span>Start Time</span>
+        <span class="mono">{{ booking.start_time[:16].replace('T', ' ') }}</span>
+      </div>
+      <div class="payment-summary-row">
+        <span>End Time</span>
+        <span class="mono">{{ booking.end_time[:16].replace('T', ' ') }}</span>
+      </div>
+      <div class="payment-summary-row">
+        <span>Total Amount</span>
+        <span>₹{{ booking.total_cost }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Method Selection -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-title">Payment Method</div>
+    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:1rem;">This is a simulated payment — no real transaction occurs.</p>
+
+    <div class="payment-methods" id="methodGroup">
+      <div class="pay-method selected" onclick="selectMethod(this, 'upi')">
+        <div class="icon">📱</div>
+        UPI
+      </div>
+      <div class="pay-method" onclick="selectMethod(this, 'card')">
+        <div class="icon">💳</div>
+        Card
+      </div>
+      <div class="pay-method" onclick="selectMethod(this, 'cash')">
+        <div class="icon">💵</div>
+        Cash
+      </div>
+      <div class="pay-method" onclick="selectMethod(this, 'wallet')">
+        <div class="icon">👛</div>
+        Wallet
+      </div>
+    </div>
+
+    <!-- UPI panel -->
+    <div id="panel-upi" class="pay-panel">
+      <div class="form-group">
+        <label>UPI ID</label>
+        <input type="text" class="form-control" placeholder="yourname@upi" id="upiInput">
+      </div>
+    </div>
+
+    <!-- Card panel -->
+    <div id="panel-card" class="pay-panel" style="display:none;">
+      <div class="form-group">
+        <label>Card Number</label>
+        <input type="text" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" id="cardNum">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group">
+          <label>Expiry</label>
+          <input type="text" class="form-control" placeholder="MM/YY" maxlength="5">
+        </div>
+        <div class="form-group">
+          <label>CVV</label>
+          <input type="password" class="form-control" placeholder="•••" maxlength="3">
+        </div>
+      </div>
+    </div>
+
+    <!-- Cash panel -->
+    <div id="panel-cash" class="pay-panel" style="display:none;">
+      <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:0.9rem 1rem;font-size:0.88rem;color:var(--text-muted);">
+        💵 Pay <strong style="color:var(--green)">₹{{ booking.total_cost }}</strong> at the parking booth on arrival.
+      </div>
+    </div>
+
+    <!-- Wallet panel -->
+    <div id="panel-wallet" class="pay-panel" style="display:none;">
+      <div style="background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:0.9rem 1rem;font-size:0.88rem;color:var(--text-muted);">
+        👛 ₹{{ booking.total_cost }} will be deducted from your wallet balance.
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm payment form -->
+  <form method="POST" action="{{ url_for('payment') }}" id="payForm">
+    <div style="background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.2rem;display:flex;align-items:center;gap:0.75rem;font-size:0.88rem;">
+      <input type="checkbox" id="termsCheck" required style="accent-color:var(--accent);width:16px;height:16px;cursor:pointer;">
+      <label for="termsCheck" style="cursor:pointer;">I confirm my booking details are correct and agree to the parking terms.</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block btn-lg" id="payBtn">
+      🔒 Pay ₹{{ booking.total_cost }} & Confirm
+    </button>
+
+    <div style="text-align:center;margin-top:0.8rem;">
+      <a href="{{ url_for('book') }}" style="font-size:0.85rem;color:var(--text-muted);">← Go back and change booking</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let currentMethod = 'upi';
+
+  function selectMethod(el, method) {
+    currentMethod = method;
+    document.querySelectorAll('.pay-method').forEach(m => m.classList.remove('selected'));
+    el.classList.add('selected');
+    document.querySelectorAll('.pay-panel').forEach(p => p.style.display = 'none');
+    document.getElementById('panel-' + method).style.display = 'block';
+  }
+
+  // Card number formatter
+  const cardEl = document.getElementById('cardNum');
+  if (cardEl) {
+    cardEl.addEventListener('input', function() {
+      let v = this.value.replace(/\D/g,'').substring(0,16);
+      this.value = v.replace(/(.{4})/g,'$1 ').trim();
+    });
+  }
+
+  // Terms checkbox enables pay button
+  document.getElementById('termsCheck').addEventListener('change', function() {
+    document.getElementById('payBtn').disabled = !this.checked;
+  });
+  document.getElementById('payBtn').disabled = true;
+
+  // Simulate payment processing animation
+  document.getElementById('payForm').addEventListener('submit', function() {
+    const btn = document.getElementById('payBtn');
+    btn.textContent = '⏳ Processing...';
+    btn.disabled = true;
+  });
+</script>
+{% endblock %}

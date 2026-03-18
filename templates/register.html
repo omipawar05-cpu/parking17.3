@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+
+{% block content %}
+<div class="container-sm">
+  <div class="card auth-card">
+    <div class="card-title">Create Account</div>
+    <p class="auth-sub">Join ParkEase and start booking smarter.</p>
+
+    <form method="POST" action="{{ url_for('register') }}" id="registerForm" novalidate>
+
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" name="name" class="form-control"
+               placeholder="John Smith" required minlength="2"
+               value="{{ request.form.get('name', '') }}">
+        <small class="field-error" id="nameErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control"
+               placeholder="john@example.com" required
+               value="{{ request.form.get('email', '') }}">
+        <small class="field-error" id="emailErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="password-toggle">
+          <input type="password" id="password" name="password" class="form-control"
+                 placeholder="Min. 6 characters" required minlength="6">
+          <button type="button" class="toggle-btn" onclick="togglePwd('password')">👁</button>
+        </div>
+        <small class="field-error" id="pwdErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password</label>
+        <div class="password-toggle">
+          <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                 placeholder="Repeat password" required>
+          <button type="button" class="toggle-btn" onclick="togglePwd('confirm_password')">👁</button>
+        </div>
+        <small class="field-error" id="confirmErr" style="color:var(--red);font-size:0.8rem;"></small>
+      </div>
+
+      <!-- Password strength bar -->
+      <div style="margin-bottom:1.2rem;">
+        <div style="height:4px;background:var(--border);border-radius:4px;overflow:hidden;">
+          <div id="strengthBar" style="height:100%;width:0%;transition:all 0.3s;border-radius:4px;"></div>
+        </div>
+        <small id="strengthLabel" style="font-size:0.75rem;color:var(--text-muted);"></small>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
+    </form>
+
+    <hr class="divider">
+    <p class="auth-footer">Already have an account? <a href="{{ url_for('login') }}">Log in here</a></p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function togglePwd(id) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+// Password strength indicator
+document.getElementById('password').addEventListener('input', function() {
+  const v = this.value;
+  let score = 0;
+  if (v.length >= 6) score++;
+  if (v.length >= 10) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+
+  const bar = document.getElementById('strengthBar');
+  const label = document.getElementById('strengthLabel');
+  const levels = ['', 'Weak', 'Fair', 'Good', 'Strong', 'Very Strong'];
+  const colors = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#16a34a'];
+  bar.style.width = (score * 20) + '%';
+  bar.style.background = colors[score] || 'transparent';
+  label.textContent = score > 0 ? levels[score] : '';
+  label.style.color = colors[score];
+});
+
+// Frontend validation
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+  let valid = true;
+
+  const name = document.getElementById('name').value.trim();
+  if (name.length < 2) {
+    document.getElementById('nameErr').textContent = 'Name must be at least 2 characters.';
+    valid = false;
+  } else { document.getElementById('nameErr').textContent = ''; }
+
+  const email = document.getElementById('email').value.trim();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    document.getElementById('emailErr').textContent = 'Please enter a valid email.';
+    valid = false;
+  } else { document.getElementById('emailErr').textContent = ''; }
+
+  const pwd = document.getElementById('password').value;
+  if (pwd.length < 6) {
+    document.getElementById('pwdErr').textContent = 'Password must be at least 6 characters.';
+    valid = false;
+  } else { document.getElementById('pwdErr').textContent = ''; }
+
+  const confirm = document.getElementById('confirm_password').value;
+  if (pwd !== confirm) {
+    document.getElementById('confirmErr').textContent = 'Passwords do not match.';
+    valid = false;
+  } else { document.getElementById('confirmErr').textContent = ''; }
+
+  if (!valid) e.preventDefault();
+});
+</script>
+{% endblock %}
