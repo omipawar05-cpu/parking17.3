@@ -534,7 +534,10 @@ def server_error(e):
 # MAIN
 # ─────────────────────────────────────────
 
-if __name__ == '__main__':
-    init_db()
-    app.run(debug=True, port=5000)
 
+# This runs init_db whether started by gunicorn or directly
+with app.app_context():
+    init_db()
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
