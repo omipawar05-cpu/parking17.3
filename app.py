@@ -18,14 +18,20 @@ app.secret_key = 'parking_secret_key_2024'  # Change this in production
 # DATABASE CONNECTION
 # ─────────────────────────────────────────
 
+import os
+
 def get_db():
-    """Return a new database connection."""
-    conn = psycopg2.connect(
-        host="localhost",
-        database="parking_db",
-        user="postgres",
-        password="root123"       # ← change to your DB password
-    )
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url:
+        conn = psycopg2.connect(database_url, sslmode='require')
+    else:
+        # fallback for local development
+        conn = psycopg2.connect(
+            host="localhost",
+            database="parking_db",
+            user="postgres",
+            password="root123"
+        )
     return conn
 
 def hash_password(password):
