@@ -328,7 +328,7 @@ def book():
 
         start_time = datetime.now()
         end_time = start_time + timedelta(hours=hours)
-        total_cost = round(slot['price_per_hour'] * hours, 2)
+        total_cost = round(float(slot['price_per_hour']) * hours, 2)
 
         # Store booking details in session for payment page
         session['pending_booking'] = {
@@ -531,3 +531,4 @@ def server_error(e):
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, port=5000)
+
