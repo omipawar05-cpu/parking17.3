@@ -535,13 +535,18 @@ def server_error(e):
 # ─────────────────────────────────────────
 
 
+# ─────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────
+
+_db_initialized = False
+
+@app.before_request
+def setup():
+    global _db_initialized
+    if not _db_initialized:
+        init_db()
+        _db_initialized = True
+
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, port=5000)
-else:
-    # Running under gunicorn — init DB on startup
-    with app.app_context():
-        try:
-            init_db()
-        except Exception as e:
-            print(f"DB init error: {e}")
