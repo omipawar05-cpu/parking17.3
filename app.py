@@ -535,9 +535,13 @@ def server_error(e):
 # ─────────────────────────────────────────
 
 
-# This runs init_db whether started by gunicorn or directly
-with app.app_context():
-    init_db()
-
 if __name__ == '__main__':
+    init_db()
     app.run(debug=True, port=5000)
+else:
+    # Running under gunicorn — init DB on startup
+    with app.app_context():
+        try:
+            init_db()
+        except Exception as e:
+            print(f"DB init error: {e}")
